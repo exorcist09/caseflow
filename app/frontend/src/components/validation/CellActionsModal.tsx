@@ -1,4 +1,4 @@
-// app/frontend/src/components/validation/CellActionsModal.tsx
+
 import React from 'react';
 import { useValidationStore } from '../../state/validationStore';
 

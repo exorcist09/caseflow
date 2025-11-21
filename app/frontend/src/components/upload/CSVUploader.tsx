@@ -2,32 +2,43 @@ import { useState } from "react";
 import DropZone from "../ui/DropZone";
 import { useUploadStore } from "../../state/uploadStore";
 import { validateCSVFile } from "../../utils/fileValidation";
-import { parseCSV } from "../../utils/csv";
-
 
 export default function CSVUploader() {
-const { setFile, setRawRows, setError, setLoading } = useUploadStore();
-
+  const { setFile, setRawRows, setError, setLoading } = useUploadStore();
   const [dragging, setDragging] = useState(false);
 
   async function handleFiles(files: FileList) {
     const file = files[0];
     const error = validateCSVFile(file);
 
-    if (error) return setError(error);
+    if (error) {
+      setError(error);
+      return;
+    }
 
     setError(null);
     setFile(file);
     setLoading(true);
 
-    try {
-      const parsedRows = await parseCSV(file);
-      setRawRows(parsedRows);
-    } catch {
-      setError("Failed to parse the CSV.");
-    }
+    /** --- 🔥 Use Web Worker CSV Parsing for 50k+ rows --- */
+    const worker = new Worker(
+      new URL("../../workers/csvWorker.ts", import.meta.url)
+    );
 
-    setLoading(false);
+    worker.postMessage(file);
+
+    worker.onmessage = (e) => {
+      const { rows, error } = e.data;
+
+      if (error) {
+        setError("Failed to parse CSV");
+      } else {
+        setRawRows(rows);
+      }
+
+      setLoading(false);
+      worker.terminate();
+    };
   }
 
   return (
@@ -35,7 +46,8 @@ const { setFile, setRawRows, setError, setLoading } = useUploadStore();
       <DropZone onDrop={handleFiles} isDragging={dragging} />
 
       <p className="text-sm text-gray-500 text-center">
-        Supports files up to <strong>50 MB</strong> with up to <strong>50k rows</strong>.
+        Supports files up to <strong>50 MB</strong> and{" "}
+        <strong>50k+ rows</strong> (auto-optimized).
       </p>
     </div>
   );
