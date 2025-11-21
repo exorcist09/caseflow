@@ -1,5 +1,5 @@
 // src/state/bulkEditStore.ts
-import create from 'zustand';
+import {create} from 'zustand';
 
 type BulkAction = {
   type: 'set' | 'delete' | 'fixAll';

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import i18n from "../i18n";
+import {Globe} from "lucide-react";
 import { useAuthStore } from "../state/useAuth";
 
 export default function Navbar() {
@@ -22,15 +23,12 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
         
         {/* Left: Logo */}
-        <Link to="/" className="text-xl font-semibold">
+        <Link to="/" className="text-xl font-bold text-blue-400 hover:text-black">
           CaseFlow
         </Link>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-6">
-          <Link to="/import" className="hover:text-blue-600">
-            {t("navbar.import")}
-          </Link>
           <Link to="/cases" className="hover:text-blue-600">
             {t("navbar.cases")}
           </Link>
@@ -41,6 +39,7 @@ export default function Navbar() {
             value={i18n.language}
             onChange={(e) => i18n.changeLanguage(e.target.value)}
           >
+            <Globe size={16} />
             <option value="en">EN</option>
             <option value="hi">HI</option>
           </select>
@@ -90,11 +89,6 @@ export default function Navbar() {
             leaveTo="transform opacity-0 scale-95"
           >
             <Menu.Items className="absolute right-0 top-10 w-40 bg-white border shadow-md rounded p-2">
-              <Menu.Item>
-                <Link to="/import" className="block px-3 py-2 hover:bg-gray-100 rounded">
-                  {t("navbar.import")}
-                </Link>
-              </Menu.Item>
               <Menu.Item>
                 <Link to="/cases" className="block px-3 py-2 hover:bg-gray-100 rounded">
                   {t("navbar.cases")}

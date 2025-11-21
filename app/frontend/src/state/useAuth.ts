@@ -1,10 +1,11 @@
-import create from 'zustand';
+import {create} from 'zustand';
 
 type AuthState = {
   token: string | null;
   refresh: string | null;
   user: any | null;
   setAuth: (token: string, refresh: string, user: any) => void;
+  setUser: (user: any) => void;   
   logout: () => void;
 };
 
@@ -13,6 +14,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   refresh: null,
   user: null,
   setAuth: (token, refresh, user) => set({ token, refresh, user }),
+  setUser: (user) => set({ user }),  
   logout: () => set({ token: null, refresh: null, user: null })
 }));
 

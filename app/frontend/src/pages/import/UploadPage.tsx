@@ -4,7 +4,8 @@ import { useUploadStore } from "../../state/uploadStore";
 import { useNavigate } from "react-router-dom";
 
 export default function UploadPage() {
-  const { file, rows, error, loading } = useUploadStore();
+const { file, rawRows, error, loading } = useUploadStore();
+
   const navigate = useNavigate();
 
   return (
@@ -30,10 +31,10 @@ export default function UploadPage() {
         </div>
       )}
 
-      {file && rows.length > 0 && (
+      {file && rawRows.length > 0 && (
         <div className="text-center space-y-3">
           <div className="text-green-700 font-semibold">
-            {rows.length} rows parsed successfully!
+            {rawRows.length} rows parsed successfully!
           </div>
 
           <button

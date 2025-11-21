@@ -1,4 +1,3 @@
-// src/components/mapping/MappingTable.tsx
 import {ColumnMapping} from "./ColumnMapper";
 import { ALL_FIELDS } from "../../utils/schema";
 

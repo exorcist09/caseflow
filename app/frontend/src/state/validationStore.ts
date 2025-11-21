@@ -1,5 +1,5 @@
 // app/frontend/src/state/validationStore.ts
-import create from 'zustand';
+import {create} from 'zustand';
 import { validateRow, titleCase, normalizePhoneSimple, trimString } from '../utils/validation';
 import Papa from 'papaparse';
 

@@ -1,14 +1,13 @@
-// src/state/submitStore.ts
-import create from 'zustand';
+import { create } from "zustand";
 
-export type ChunkStatus = 'pending' | 'in-progress' | 'success' | 'failed';
+export type ChunkStatus = "pending" | "in-progress" | "success" | "failed";
 
-type ChunkRecord = {
+export type ChunkRecord = {
   index: number;
   size: number;
   status: ChunkStatus;
   processed?: number;
-  successes?: string[]; // array of case_ids that succeeded
+  successes?: string[];
   failures?: { row: any; error: string }[];
 };
 
@@ -39,29 +38,69 @@ export const useSubmitStore = create<SubmitState>((set) => ({
   running: false,
 
   init(totalRows, chunkCount) {
-    const chunks = Array.from({ length: chunkCount }).map((_, i) => ({
-      index: i,
-      size: 0,
-      status: 'pending' as ChunkStatus
-    }));
-    set({ chunks, current: 0, totalRows, totalChunks: chunkCount, successes: 0, failures: 0 });
+    const chunks: ChunkRecord[] = Array.from({ length: chunkCount }).map(
+      (_, i) => ({
+        index: i,
+        size: 0,
+        status: "pending",
+      })
+    );
+
+    set({
+      chunks,
+      current: 0,
+      totalRows,
+      totalChunks: chunkCount,
+      successes: 0,
+      failures: 0,
+    });
   },
 
   markInProgress(idx) {
-    set((s) => ({ chunks: s.chunks.map((c) => (c.index === idx ? { ...c, status: 'in-progress' } : c)), current: idx }));
+    set((state) => ({
+      chunks: state.chunks.map((c) =>
+        c.index === idx ? { ...c, status: "in-progress" as ChunkStatus } : c
+      ),
+      current: idx,
+    }));
   },
 
   markSuccess(idx, data) {
-    set((s) => {
-      const next = s.chunks.map((c) => (c.index === idx ? { ...c, status: 'success', processed: data.processed, successes: data.successes, failures: data.failures } : c));
-      const succ = s.successes + (data.successes ? data.successes.length : 0);
-      const fail = s.failures + (data.failures ? data.failures.length : 0);
-      return { chunks: next, successes: succ, failures: fail };
+    set((state) => {
+      const updatedChunks = state.chunks.map((c) =>
+        c.index === idx
+          ? {
+              ...c,
+              status: "success" as ChunkStatus,
+              processed: data.processed,
+              successes: data.successes,
+              failures: data.failures,
+            }
+          : c
+      );
+
+      return {
+        chunks: updatedChunks,
+        successes: state.successes + (data.successes?.length ?? 0),
+        failures: state.failures + (data.failures?.length ?? 0),
+      };
     });
   },
 
   markFailed(idx, err) {
-    set((s) => ({ chunks: s.chunks.map((c) => (c.index === idx ? { ...c, status: 'failed', processed: 0, failures: [{ row: null, error: String(err) }] } : c)), failures: s.failures + 1 }));
+    set((state) => ({
+      chunks: state.chunks.map((c) =>
+        c.index === idx
+          ? {
+              ...c,
+              status: "failed" as ChunkStatus,
+              processed: 0,
+              failures: [{ row: null, error: String(err) }],
+            }
+          : c
+      ),
+      failures: state.failures + 1,
+    }));
   },
 
   setRunning(v) {
@@ -69,6 +108,14 @@ export const useSubmitStore = create<SubmitState>((set) => ({
   },
 
   reset() {
-    set({ chunks: [], current: 0, totalRows: 0, totalChunks: 0, successes: 0, failures: 0, running: false });
-  }
+    set({
+      chunks: [],
+      current: 0,
+      totalRows: 0,
+      totalChunks: 0,
+      successes: 0,
+      failures: 0,
+      running: false,
+    });
+  },
 }));

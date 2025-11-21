@@ -1,5 +1,4 @@
-// src/pages/import/SubmitPage.tsx
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { useUploadStore } from '../../state/uploadStore';
 import { chunkArray } from '../../utils/chunk';
 import { createImportFromCSV, sendChunkWithRetry } from '../../services/submitService';

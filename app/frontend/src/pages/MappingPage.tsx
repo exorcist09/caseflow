@@ -1,4 +1,3 @@
-// src/pages/MappingPage.tsx
 import MappingTable from "../components/mapping/MappingTable";
 import { useMappingStore } from "../state/mappingStore";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +8,7 @@ export default function MappingPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Column Mapping</h1>
+      <h1 className="text-2xl font-bold">Column Mapping/Schema Mapping</h1>
 
       <button
         onClick={autoMap}

@@ -1,4 +1,3 @@
-// src/utils/schema.ts
 export const REQUIRED_FIELDS = [
   { key: "case_id", label: "Case ID (required)" },
   { key: "applicant_name", label: "Applicant Name (required)" },

@@ -1,6 +1,5 @@
-import React from "react";
-import { cn } from "@/utils/cn";
-// TODO fix this import path
+import React, { useRef } from "react";
+import { cn } from "../../utils/cn";
 
 interface DropZoneProps {
   onDrop: (files: FileList) => void;
@@ -8,11 +7,18 @@ interface DropZoneProps {
 }
 
 export default function DropZone({ onDrop, isDragging }: DropZoneProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div
       tabIndex={0}
       role="button"
-      onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLElement).click()}
+      onClick={handleBrowseClick}
+      onKeyDown={(e) => e.key === "Enter" && handleBrowseClick()}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -25,6 +31,17 @@ export default function DropZone({ onDrop, isDragging }: DropZoneProps) {
           : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
       )}
     >
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={(e) => {
+          if (e.target.files) onDrop(e.target.files);
+        }}
+        accept=".csv"
+        className="hidden"
+      />
+
       <div className="text-center space-y-3">
         <svg
           className="w-16 h-16 mx-auto text-blue-500"
@@ -39,6 +56,7 @@ export default function DropZone({ onDrop, isDragging }: DropZoneProps) {
             d="M12 16v-8m0 0l-3 3m3-3l3 3m-9 8h12a2 2 0 002-2V7a2 2 0 00-2 2H6a2 2 0 00-2 2v7a2 2 0 002 2z"
           />
         </svg>
+
         <p className="font-semibold text-gray-700">
           Drag & Drop your CSV file here
         </p>

@@ -14,6 +14,55 @@ One-liner: **Import → Validate → Fix → Submit → Track**
 (Diagram)
 Frontend <-> Backend REST API <-> PostgreSQL (Prisma)
 
+flow of data in frontend
+┌─────────────────────────────────────┐
+│           Upload Page               │
+│         (/import)                   │
+│                                     │
+│  • User uploads CSV                 │
+│  • CSV parsed → rows[] stored       │
+│    in Zustand uploadStore           │
+│                                     │
+│  [Continue to Preview →]            │
+└─────────────────────────────────────┘
+                   │
+                   │ rows[], file
+                   ▼
+┌─────────────────────────────────────┐
+│         Preview / Mapping Page      │
+│         (/import/preview)           │
+│                                     │
+│  • Shows parsed rows in a table     │
+│  • User reviews data                │
+│  • (Optional) Column mapping        │
+│  • Ready to send final valid rows   │
+│                                     │
+│  [Submit Import →]                  │
+└─────────────────────────────────────┘
+                   │
+                   │ POST rows[] to backend API
+                   ▼
+┌─────────────────────────────────────┐
+│             Backend API             │
+│     POST /api/cases/import          │
+│                                     │
+│  • Validates rows                   │
+│  • Creates Case objects             │
+│  • Saves to database                │
+│  • Returns success/failure          │
+└─────────────────────────────────────┘
+                   │
+                   │ success
+                   ▼
+┌─────────────────────────────────────┐
+│          Cases List Page            │
+│             (/cases)                │
+│                                     │
+│  • Shows all imported cases         │
+│  • Fetches from backend             │
+└─────────────────────────────────────┘
+
+
 
 ## Run locally (one command)
 
