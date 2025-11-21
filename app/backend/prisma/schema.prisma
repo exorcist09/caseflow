@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(OPERATOR)
+  createdAt DateTime @default(now())
+  imports   Import[]
+  caseHistories CaseHistory[] @relation("actorHistories", fields: [], references: [])
+}
+
+model Import {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime  @default(now())
+  totalRows Int
+  succeeded Int       @default(0)
+  failed    Int       @default(0)
+  jobs      ImportJob[]
+}
+
+model ImportJob {
+  id        String   @id @default(cuid())
+  import    Import   @relation(fields: [importId], references: [id])
+  importId  String
+  rowData   Json
+  status    ImportStatus @default(PENDING)
+  error     String?
+  createdAt DateTime @default(now())
+}
+
+model Case {
+  id             String   @id @default(cuid())
+  caseId         String   @unique
+  applicantName  String
+  dob            DateTime
+  email          String?
+  phone          String?
+  category       Category
+  priority       Priority @default(LOW)
+  assigneeId     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  history        CaseHistory[] 
+}
+
+model CaseHistory {
+  id        String   @id @default(cuid())
+  case      Case     @relation(fields: [caseId], references: [id])
+  caseId    String
+  action    String
+  actor     User?    @relation("actorHistories", fields: [actorId], references: [id])
+  actorId   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+enum ImportStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum Category {
+  TAX
+  LICENSE
+  PERMIT
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}

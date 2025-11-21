@@ -1,0 +1,19 @@
+{
+  "login": {
+    "title": "साइन इन करें",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "button": "लॉगिन"
+  },
+  "navbar": {
+    "import": "केस आयात करें",
+    "cases": "सभी केस",
+    "logout": "लॉगआउट"
+  },
+  "import": {
+    "upload_button": "CSV अपलोड करें",
+    "processing": "प्रोसेस हो रहा है...",
+    "retry": "पुनः प्रयास करें",
+    "completed": "इम्पोर्ट सफल"
+  }
+}

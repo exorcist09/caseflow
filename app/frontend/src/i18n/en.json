@@ -1,0 +1,19 @@
+{
+  "login": {
+    "title": "Sign In",
+    "email": "Email",
+    "password": "Password",
+    "button": "Login"
+  },
+  "navbar": {
+    "import": "Import Cases",
+    "cases": "Cases",
+    "logout": "Logout"
+  },
+  "import": {
+    "upload_button": "Upload CSV",
+    "processing": "Processing...",
+    "retry": "Retry",
+    "completed": "Import Completed"
+  }
+}

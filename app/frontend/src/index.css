@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* app global tweaks */
+:root {
+  --focus-ring: 3px;
+}
+
+button:focus, input:focus, textarea:focus {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 var(--focus-ring) rgba(59,130,246,0.4);
+  border-radius: 6px;
+}
