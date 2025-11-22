@@ -9,8 +9,9 @@ import { useSubmitStore } from "../../state/submitStore";
 import ProgressBar from "../../components/import/ProgressBar";
 import ImportReport from "../../components/import/ImportReport";
 import Papa from "papaparse";
-import { useValidationStore } from "../../state/validationStore";
 import { useTranslation } from "react-i18next";
+
+type FailureRow = { row: any; error: string };
 
 export default function SubmitPage() {
   const { t } = useTranslation();
@@ -52,7 +53,7 @@ export default function SubmitPage() {
       const chunked = chunkArray(mappedRows, CHUNK_SIZE);
       init(mappedRows.length, chunked.length);
 
-      const aggregatedErrors: any[] = [];
+      const aggregatedErrors: FailureRow[] = [];
 
       for (let i = 0; i < chunked.length; i++) {
         const chunk = chunked[i];
@@ -63,23 +64,26 @@ export default function SubmitPage() {
         const res = await sendChunkWithRetry(importId, chunk, 3);
 
         if (!res.ok) {
-          markFailed(i, res.error);
-          aggregatedErrors.push({
-            chunkIndex: i,
+          // Entire chunk failed
+          const failedRows: FailureRow[] = chunk.map((row) => ({
+            row,
             error: String(res.error),
-            rows: chunk,
-          });
+          }));
+          markFailed(i, { failedRows, error: String(res.error) });
+          aggregatedErrors.push(...failedRows);
         } else {
-          markSuccess(i, res.data);
+          // Chunk partially or fully succeeded
+          const failuresList: FailureRow[] = res.data.failures ?? [];
+          const successesList: string[] = res.data.successes ?? [];
 
-          if (res.data.failures?.length) {
-            res.data.failures.forEach((f: any) =>
-              aggregatedErrors.push({
-                chunkIndex: i,
-                row: f.row,
-                error: f.error,
-              })
-            );
+          markSuccess(i, {
+            processed: chunk.length,
+            successes: successesList,
+            failures: failuresList,
+          });
+
+          if (failuresList.length > 0) {
+            aggregatedErrors.push(...failuresList);
           }
         }
       }
@@ -88,10 +92,11 @@ export default function SubmitPage() {
       setRunning(false);
       setRunningLocal(false);
 
+      // Prepare CSV for failed rows
       if (aggregatedErrors.length > 0) {
         const rows = aggregatedErrors.map((f) => ({
           ...(f.row ?? {}),
-          __error: f.error ?? "chunk_failed",
+          __error: f.error,
         }));
         setFailedRowsCSV(Papa.unparse(rows));
       } else {
@@ -115,9 +120,7 @@ export default function SubmitPage() {
       <div className="bg-white border p-6 rounded-2xl shadow-sm space-y-6">
         {/* Row info */}
         <div className="flex items-center justify-between">
-          <span className="text-gray-700">
-            {t("submit.rowsToSend")}:
-          </span>
+          <span className="text-gray-700">{t("submit.rowsToSend")}:</span>
           <span className="text-lg font-semibold text-indigo-600">
             {mappedRows?.length ?? 0}
           </span>
@@ -155,7 +158,6 @@ export default function SubmitPage() {
         {/* Chunk Status */}
         <div className="pt-4">
           <h4 className="font-medium text-lg">{t("submit.chunkStatuses")}</h4>
-
           <div className="flex flex-wrap gap-3 mt-3">
             {chunks.map((c) => (
               <div
@@ -170,7 +172,7 @@ export default function SubmitPage() {
                     : "bg-gray-100 text-gray-600 border-gray-200"
                 }`}
               >
-                #{c.index + 1} — {t(`submit.status.${c.status}`)}
+                {t(`submit.status.${c.status}`)}
               </div>
             ))}
           </div>

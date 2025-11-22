@@ -49,6 +49,8 @@ export const useMappingStore = create<MappingState>((set, get) => ({
   isValid: () => {
     const required = ["case_id", "applicant_name", "dob"];
     const mappings = get().mappings;
-    return required.every((field) => mappings[field]);
+    return required.every(
+      (field) => mappings[field] !== null && mappings[field] !== undefined && mappings[field] !== ""
+    );
   },
 }));

@@ -1,5 +1,3 @@
-// app/frontend/src/components/validation/ErrorBadge.tsx
-import React from 'react';
 
 export default function ErrorBadge({ count, label }: { count: number; label?: string }) {
   if (!count) return <span className="text-sm text-gray-500">No errors</span>;

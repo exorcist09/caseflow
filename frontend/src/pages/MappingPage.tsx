@@ -1,9 +1,9 @@
-// src/pages/MappingPage.tsx
 import MappingTable from "../components/mapping/MappingTable";
 import { useMappingStore } from "../state/mappingStore";
 import { useUploadStore } from "../state/uploadStore";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
 
 export default function MappingPage() {
   const { t } = useTranslation();
@@ -11,6 +11,9 @@ export default function MappingPage() {
 
   const { mappings, autoMap, isValid } = useMappingStore();
   const { rawRows, setMappedRows } = useUploadStore();
+
+  // Memoize validity to avoid multiple calls
+  const valid = useMemo(() => isValid(), [mappings]);
 
   function handleContinue() {
     if (!rawRows.length) return;
@@ -64,7 +67,7 @@ export default function MappingPage() {
           </div>
 
           {/* Error if required fields missing */}
-          {!isValid() && (
+          {!valid && (
             <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm animate-fadeIn">
               ⚠️ {t("mapping.map_all_required")}
             </div>
@@ -75,9 +78,9 @@ export default function MappingPage() {
         <div className="sticky bottom-4 flex justify-center">
           <button
             onClick={handleContinue}
-            disabled={!isValid()}
+            disabled={!valid}
             className={`px-8 py-3 rounded-xl text-lg font-medium shadow-lg transition-all ${
-              isValid()
+              valid
                 ? "bg-green-600 text-white hover:bg-green-700 active:scale-95"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}

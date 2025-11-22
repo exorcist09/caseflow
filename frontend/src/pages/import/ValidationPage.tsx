@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CSVGrid from "../../components/grid/CSVGrid";
 import CellActionsModal from "../../components/validation/CellActionsModal";
@@ -7,13 +7,18 @@ import { useUploadStore } from "../../state/uploadStore";
 import { useValidationStore } from "../../state/validationStore";
 import ColumnTools from "../../components/validation/ColumnTools";
 import { useTranslation } from "react-i18next";
+import {
+  titleCase,
+  normalizePhoneSimple,
+  trimString,
+} from "../../utils/validation";
 
 export default function ValidationPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   const { file, rawRows, mappedRows, setMappedRows } = useUploadStore();
-  const { validateAll, errors, columnErrorCounts, fixAll } = useValidationStore();
+  const { validateAll, errors, columnErrorCounts } = useValidationStore();
 
   const [modalState, setModalState] = useState({
     open: false,
@@ -37,13 +42,53 @@ export default function ValidationPage() {
     }
   }, [mappedRows, validateAll]);
 
-  function handleValidateAll() {
-    validateAll(mappedRows);
+  // ---- Helper for DOB normalization ----
+  function normalizeDOB(dob: string) {
+    if (!dob) return "";
+    const date = new Date(dob);
+    if (isNaN(date.getTime())) return "";
+    return date.toISOString().split("T")[0]; // YYYY-MM-DD
   }
 
+  // ---- Fix All Button ----
   function handleFixAll() {
-    const fixed = fixAll(mappedRows);
-    setMappedRows(fixed);
+    const validCategories = ["TAX", "LICENSE", "PERMIT"];
+    const validPriorities = ["LOW", "MEDIUM", "HIGH"];
+
+    const fixedRows = mappedRows.map((r) => {
+      const copy = { ...r };
+
+      // Standardize fields
+      copy.applicant_name = titleCase(copy.applicant_name);
+      copy.phone = normalizePhoneSimple(copy.phone);
+      copy.case_id = trimString(copy.case_id);
+      copy.dob = normalizeDOB(copy.dob);
+
+      // Fix priority
+      if (
+        !copy.priority ||
+        !validPriorities.includes(copy.priority?.toUpperCase())
+      ) {
+        copy.priority = "LOW";
+      } else {
+        copy.priority = copy.priority.toUpperCase();
+      }
+
+      // Fix category
+      if (
+        !copy.category ||
+        !validCategories.includes(copy.category?.toUpperCase())
+      ) {
+        copy.category = "TAX";
+      } else {
+        copy.category = copy.category.toUpperCase();
+      }
+
+      return copy;
+    });
+
+    setMappedRows(fixedRows);
+    validateAll(fixedRows); // Re-run validation
   }
 
   function handleCellSelect(rowIndex: number, field: string) {
@@ -54,6 +99,7 @@ export default function ValidationPage() {
 
   function handleApply(rows: any[]) {
     setMappedRows(rows);
+    validateAll(rows); // Always re-validate after ColumnTools changes
   }
 
   function downloadErrors() {
@@ -84,13 +130,6 @@ export default function ValidationPage() {
               count={Object.keys(errors).length}
               label={t("validation.rows_with_errors")}
             />
-
-            <button
-              onClick={handleValidateAll}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 active:scale-95 transition"
-            >
-              {t("validation.validate")}
-            </button>
 
             <button
               onClick={handleFixAll}
@@ -124,23 +163,20 @@ export default function ValidationPage() {
         </div>
       </div>
 
+      {/* Main Grid */}
       <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
-
         {/* Sidebar */}
         <aside
           className={`bg-white rounded-xl shadow p-5 space-y-6 border border-gray-200 transform transition-all duration-300
-          ${sidebarOpen ? "block" : "hidden"} md:block`}
+${sidebarOpen ? "block" : "hidden"} md:block`}
         >
           <div>
-            <h3 className="font-semibold mb-3 text-gray-800">
-              Errors
-            </h3>
+            <h3 className="font-semibold mb-3 text-gray-800">Errors</h3>
 
             <ul className="space-y-2">
               {Object.keys(columnErrorCounts).length === 0 && (
                 <li className="text-sm text-gray-500">No column errors yet.</li>
               )}
-
               {Object.entries(columnErrorCounts).map(([col, cnt]) => (
                 <li
                   key={col}
@@ -155,13 +191,22 @@ export default function ValidationPage() {
             </ul>
           </div>
 
+          <div className="space-y-2">
+            <button
+              onClick={() => validateAll(mappedRows)}
+              className="w-full py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition shadow-sm"
+            >
+              Validate
+            </button>
+          </div>
+
           <ColumnTools
             columns={Object.keys(mappedRows[0] || {})}
-            onApply={(updateFn) => setMappedRows(updateFn(mappedRows))}
+            onApply={(updateFn) => handleApply(updateFn(mappedRows))}
           />
         </aside>
 
-        {/* CSV Grid Section */}
+        {/* CSV Grid */}
         <section className="md:col-span-3 bg-white rounded-xl shadow border border-gray-200 p-4">
           <CSVGrid
             rows={mappedRows}
@@ -175,7 +220,9 @@ export default function ValidationPage() {
       {/* Modal */}
       <CellActionsModal
         open={modalState.open}
-        onClose={() => setModalState({ open: false, rowIndex: null, field: null })}
+        onClose={() =>
+          setModalState({ open: false, rowIndex: null, field: null })
+        }
         rowIndex={modalState.rowIndex}
         field={modalState.field}
         rows={mappedRows}

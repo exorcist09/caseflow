@@ -31,7 +31,7 @@ export default function ImportReport({
           download="failed_rows.csv"
           className="inline-block mt-4 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
         >
-          Download Failed Rows CSV
+          Download Error CSV
         </a>
       )}
     </div>
