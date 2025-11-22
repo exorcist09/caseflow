@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { cn } from "../../utils/cn";
+import { useTranslation } from "react-i18next";
 
 interface DropZoneProps {
   onDrop: (files: FileList) => void;
@@ -7,6 +8,7 @@ interface DropZoneProps {
 }
 
 export default function DropZone({ onDrop, isDragging }: DropZoneProps) {
+    const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleBrowseClick = () => {
@@ -58,9 +60,10 @@ export default function DropZone({ onDrop, isDragging }: DropZoneProps) {
         </svg>
 
         <p className="font-semibold text-gray-700">
-          Drag & Drop your CSV file here
+          {t("upload.drag_drop")}
         </p>
-        <p className="text-sm text-gray-500">or click to browse</p>
+         {t("upload.or_click")}
+        <p className="text-sm text-gray-500">{}</p>
       </div>
     </div>
   );

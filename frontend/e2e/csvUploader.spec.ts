@@ -30,7 +30,7 @@ test.describe('CSV Uploader', () => {
 
   test('should allow uploading a CSV file', async ({ page }) => {
 
-    const filePath = './e2e/sample-cases.csv';
+    const filePath = './e2e/cleanCSV.csv';
     
     const input = page.locator('input[type="file"]');
     await input.setInputFiles(filePath);
@@ -40,7 +40,7 @@ test.describe('CSV Uploader', () => {
 
   test('should show validation errors after upload', async ({ page }) => {
     // FIX: Use string path
-    const filePath = './e2e/invalid.csv';
+    const filePath = './e2e/errorsCSV.csv';
     
     const input = page.locator('input[type="file"]');
     await input.setInputFiles(filePath);

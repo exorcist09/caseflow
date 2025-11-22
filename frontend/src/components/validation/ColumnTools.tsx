@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ColumnToolsProps {
   columns: string[];
@@ -6,6 +7,7 @@ interface ColumnToolsProps {
 }
 
 export default function ColumnTools({ columns, onApply }: ColumnToolsProps) {
+  const { t } = useTranslation();
   const [selectedColumn, setSelectedColumn] = useState("");
   const [action, setAction] = useState("");
 
@@ -21,9 +23,7 @@ export default function ColumnTools({ columns, onApply }: ColumnToolsProps) {
       case "upper":
         return str.toUpperCase();
       case "title":
-        return str
-          .toLowerCase()
-          .replace(/\b\w/g, (c) => c.toUpperCase());
+        return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
       case "normalize_phone":
         return str.replace(/\D/g, "");
       case "to_iso_date":
@@ -44,41 +44,73 @@ export default function ColumnTools({ columns, onApply }: ColumnToolsProps) {
     );
   }
 
+  const isReady = selectedColumn && action;
+
   return (
-    <div className="space-y-4">
-      <h3 className="font-medium">Bulk Column Tools</h3>
+    <div className="space-y-5 bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm">
+      <h3 className="font-semibold text-gray-800 text-lg">
+        {t("columnTools.title")}
+      </h3>
 
-      <select
-        value={selectedColumn}
-        onChange={(e) => setSelectedColumn(e.target.value)}
-        className="w-full border rounded px-2 py-2"
-      >
-        <option value="">Select column</option>
-        {columns.map((col) => (
-          <option key={col}>{col}</option>
-        ))}
-      </select>
+      {/* Column Select */}
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-gray-600">
+          {t("columnTools.selectColumn")}
+        </label>
 
-      <select
-        value={action}
-        onChange={(e) => setAction(e.target.value)}
-        className="w-full border rounded px-2 py-2"
-      >
-        <option value="">Select Action</option>
-        <option value="trim">Trim whitespace</option>
-        <option value="lower">Convert to lowercase</option>
-        <option value="upper">Convert to UPPERCASE</option>
-        <option value="title">Title Case Names</option>
-        <option value="normalize_phone">Normalize Phone (digits only)</option>
-        <option value="to_iso_date">Convert Date → YYYY-MM-DD</option>
-      </select>
+        <select
+          value={selectedColumn}
+          onChange={(e) => setSelectedColumn(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+        >
+          <option value="">{t("columnTools.selectColumn")}</option>
+          {columns.map((col) => (
+            <option key={col}>{col}</option>
+          ))}
+        </select>
+      </div>
 
+      {/* Action Select */}
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-gray-600">
+          {t("columnTools.selectAction")}
+        </label>
+
+        <select
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+        >
+          <option value="">{t("columnTools.selectAction")}</option>
+          <option value="trim">{t("columnTools.trim")}</option>
+          <option value="lower">{t("columnTools.lower")}</option>
+          <option value="upper">{t("columnTools.upper")}</option>
+          <option value="title">{t("columnTools.titleCase")}</option>
+          <option value="normalize_phone">{t("columnTools.normalizePhone")}</option>
+          <option value="to_iso_date">{t("columnTools.toISODate")}</option>
+        </select>
+      </div>
+
+      {/* Apply Button */}
       <button
         onClick={apply}
-        className="w-full bg-blue-600 text-white py-2 rounded"
+        disabled={!isReady}
+        className={`w-full py-2 rounded-lg font-medium transition shadow-sm ${
+          isReady
+            ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+        }`}
       >
-        Apply to Column
+        {t("columnTools.apply")}
       </button>
+
+      {/* Preview info */}
+      {isReady && (
+        <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          {t("columnTools.willApplyTo")}{" "}
+          <span className="font-semibold">{selectedColumn}</span>
+        </div>
+      )}
     </div>
   );
 }

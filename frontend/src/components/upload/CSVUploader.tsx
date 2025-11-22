@@ -1,11 +1,12 @@
-// src/components/upload/CSVUploader.tsx
 import { useState } from "react";
 import DropZone from "../ui/DropZone";
 import { useUploadStore } from "../../state/uploadStore";
 import { useMappingStore } from "../../state/mappingStore";
 import { validateCSVFile } from "../../utils/fileValidation";
+import { useTranslation } from "react-i18next";
 
 export default function CSVUploader() {
+   const { t } = useTranslation();
   const { setFile, setRawRows, setError, setLoading } = useUploadStore();
   const { setCSVHeaders } = useMappingStore();
   const [dragging, setDragging] = useState(false);
@@ -24,7 +25,6 @@ export default function CSVUploader() {
     setLoading(true);
 
     try {
-      // ✅ Use Web Worker for large CSV parsing
       const worker = new Worker(
         new URL("../../workers/csvWorker.ts", import.meta.url),
         { type: "module" }
@@ -36,11 +36,11 @@ export default function CSVUploader() {
         const data = e.data;
 
         if (data.error) {
-          setError(`Failed to parse CSV: ${data.error}`);
+          setError(t("upload.csv_parse_failed") +data.error);
         } else {
-          const rows = data.rows || data;             // parsed rows
-          setRawRows(rows);                           // store rows in upload store
-          if (rows.length) setCSVHeaders(Object.keys(rows[0])); // store headers for mapping dropdown
+          const rows = data.rows || data;             
+          setRawRows(rows);                           
+          if (rows.length) setCSVHeaders(Object.keys(rows[0])); 
         }
 
         setLoading(false);
@@ -48,12 +48,12 @@ export default function CSVUploader() {
       };
 
       worker.onerror = (err) => {
-        setError(`CSV Worker Error: ${err.message}`);
+              setError(t("upload.worker_error") + err.message);
         setLoading(false);
         worker.terminate();
       };
     } catch (err: any) {
-      setError(`Unexpected Error: ${err.message || err}`);
+      setError(t("upload.unexpected") + err.message );
       setLoading(false);
     }
   }
@@ -63,7 +63,7 @@ export default function CSVUploader() {
       <DropZone onDrop={handleFiles} isDragging={dragging} />
 
       <p className="text-sm text-gray-500 text-center">
-        Supports files up to <strong>50 MB</strong> and <strong>50k+ rows</strong> (parsed off main thread for smooth UI).
+        {t("upload.supports_large_files")}
       </p>
     </div>
   );

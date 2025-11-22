@@ -3,66 +3,89 @@ import MappingTable from "../components/mapping/MappingTable";
 import { useMappingStore } from "../state/mappingStore";
 import { useUploadStore } from "../state/uploadStore";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function MappingPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // From mapping store
   const { mappings, autoMap, isValid } = useMappingStore();
-
-  // From upload store
   const { rawRows, setMappedRows } = useUploadStore();
 
-  // Convert rawRows -> mappedRows based on user's dropdown selections
   function handleContinue() {
     if (!rawRows.length) return;
 
     const mapped = rawRows.map((row: any) => {
-      const obj: any = {};
-
+      const obj: Record<string, any> = {};
       Object.keys(mappings).forEach((schemaField) => {
         const csvColumn = mappings[schemaField];
         obj[schemaField] = csvColumn ? row[csvColumn] : null;
       });
-
       return obj;
     });
 
     setMappedRows(mapped);
-
-    navigate("/validate"); // GO TO VALIDATION PAGE
+    navigate("/validate");
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Column Mapping / Schema Mapping</h1>
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
 
-      <button
-        onClick={autoMap}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700"
-      >
-        Auto-Detect
-      </button>
+        {/* Header */}
+        <div className="space-y-2 text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+            {t("mapping.title")}
+          </h1>
+          <p className="text-gray-600 max-w-xl mx-auto">
+            {t("mapping.subtitle", {
+              defaultValue:
+                "Map your CSV columns to the required fields before validation.",
+            })}
+          </p>
+        </div>
 
-      <MappingTable />
+        {/* Main card */}
+        <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-200 space-y-6">
 
-      {!isValid() && (
-        <p className="text-red-500 text-sm">
-          Please map all required fields before continuing.
-        </p>
-      )}
+          {/* Auto Map Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={autoMap}
+              className="rounded-lg px-4 py-2 bg-blue-600 text-white shadow hover:bg-blue-700 active:scale-95 transition"
+            >
+              {t("mapping.auto_detect")}
+            </button>
+          </div>
 
-      <button
-        onClick={handleContinue}
-        disabled={!isValid()}
-        className={`rounded-lg px-4 py-2 font-medium shadow ${
-          isValid()
-            ? "bg-green-600 text-white hover:bg-green-700"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-      >
-        Continue →
-      </button>
+          {/* Mapping Table */}
+          <div className="overflow-hidden rounded-xl border border-gray-200">
+            <MappingTable />
+          </div>
+
+          {/* Error if required fields missing */}
+          {!isValid() && (
+            <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm animate-fadeIn">
+              ⚠️ {t("mapping.map_all_required")}
+            </div>
+          )}
+        </div>
+
+        {/* Sticky bottom action bar */}
+        <div className="sticky bottom-4 flex justify-center">
+          <button
+            onClick={handleContinue}
+            disabled={!isValid()}
+            className={`px-8 py-3 rounded-xl text-lg font-medium shadow-lg transition-all ${
+              isValid()
+                ? "bg-green-600 text-white hover:bg-green-700 active:scale-95"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {t("mapping.continue")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

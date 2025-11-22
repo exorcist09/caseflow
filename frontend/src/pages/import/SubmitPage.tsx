@@ -1,130 +1,187 @@
-import { useState } from 'react';
-import { useUploadStore } from '../../state/uploadStore';
-import { chunkArray } from '../../utils/chunk';
-import { createImportFromCSV, sendChunkWithRetry } from '../../services/submitService';
-import { useSubmitStore } from '../../state/submitStore';
-import ProgressBar from '../../components/import/ProgressBar';
-import ImportReport from '../../components/import/ImportReport';
-import { useValidationStore } from '../../state/validationStore';
-import Papa from 'papaparse';
+import { useState } from "react";
+import { useUploadStore } from "../../state/uploadStore";
+import { chunkArray } from "../../utils/chunk";
+import {
+  createImportFromCSV,
+  sendChunkWithRetry,
+} from "../../services/submitService";
+import { useSubmitStore } from "../../state/submitStore";
+import ProgressBar from "../../components/import/ProgressBar";
+import ImportReport from "../../components/import/ImportReport";
+import Papa from "papaparse";
+import { useValidationStore } from "../../state/validationStore";
+import { useTranslation } from "react-i18next";
 
 export default function SubmitPage() {
-  const { mappedRows, file, setImportId } = useUploadStore();
-  const { init, markInProgress, markSuccess, markFailed, setRunning, reset, successes, failures, chunks } = useSubmitStore();
+  const { t } = useTranslation();
+
+  const { mappedRows, setImportId } = useUploadStore();
+  const {
+    init,
+    markInProgress,
+    markSuccess,
+    markFailed,
+    setRunning,
+    reset,
+    successes,
+    failures,
+    chunks,
+  } = useSubmitStore();
+
   const [percent, setPercent] = useState(0);
   const [failedRowsCSV, setFailedRowsCSV] = useState<string | null>(null);
   const [runningLocal, setRunningLocal] = useState(false);
-  const { exportErrorCSV } = useValidationStore();
 
   const CHUNK_SIZE = 500;
 
   async function startImport() {
-    if (!mappedRows || mappedRows.length === 0) {
-      alert('No rows to import.');
+    if (!mappedRows?.length) {
+      alert(t("submit.noRows"));
       return;
     }
 
     try {
       setRunningLocal(true);
       setRunning(true);
+      setPercent(0);
 
-      // Convert mappedRows to CSV text
       const csvText = Papa.unparse(mappedRows);
-
-      // Create import on backend
-      const { importId, totalRows } = await createImportFromCSV(csvText);
+      const { importId } = await createImportFromCSV(csvText);
       setImportId(importId);
 
-      // Chunk the rows
-      const chunksArr = chunkArray(mappedRows, CHUNK_SIZE);
-      init(mappedRows.length, chunksArr.length);
+      const chunked = chunkArray(mappedRows, CHUNK_SIZE);
+      init(mappedRows.length, chunked.length);
 
-      const aggregatedFailures: any[] = [];
+      const aggregatedErrors: any[] = [];
 
-      for (let i = 0; i < chunksArr.length; i++) {
-        const chunk = chunksArr[i];
+      for (let i = 0; i < chunked.length; i++) {
+        const chunk = chunked[i];
         markInProgress(i);
-        setPercent(Math.round(((i) / chunksArr.length) * 100));
+
+        setPercent(Math.round((i / chunked.length) * 100));
 
         const res = await sendChunkWithRetry(importId, chunk, 3);
+
         if (!res.ok) {
           markFailed(i, res.error);
-          aggregatedFailures.push({ chunkIndex: i, error: String(res.error), rows: chunk });
+          aggregatedErrors.push({
+            chunkIndex: i,
+            error: String(res.error),
+            rows: chunk,
+          });
         } else {
           markSuccess(i, res.data);
-          // append backend failures if returned
-          if (res.data.failures && res.data.failures.length) {
-            res.data.failures.forEach((f: any) => {
-              aggregatedFailures.push({ chunkIndex: i, row: f.row, error: f.error });
-            });
+
+          if (res.data.failures?.length) {
+            res.data.failures.forEach((f: any) =>
+              aggregatedErrors.push({
+                chunkIndex: i,
+                row: f.row,
+                error: f.error,
+              })
+            );
           }
         }
       }
 
-      // Final percent 100%
       setPercent(100);
       setRunning(false);
       setRunningLocal(false);
 
-      // Build CSV of failed rows
-      if (aggregatedFailures.length > 0) {
-        const rowsWithErrors = aggregatedFailures.map((f) => ({
+      if (aggregatedErrors.length > 0) {
+        const rows = aggregatedErrors.map((f) => ({
           ...(f.row ?? {}),
-          __error: f.error ?? 'chunk_failed',
+          __error: f.error ?? "chunk_failed",
         }));
-        const csv = Papa.unparse(rowsWithErrors);
-        setFailedRowsCSV(csv);
+        setFailedRowsCSV(Papa.unparse(rows));
       } else {
         setFailedRowsCSV(null);
       }
-
     } catch (err: any) {
       setRunning(false);
       setRunningLocal(false);
-      alert('Import failed: ' + (err.message || String(err)));
+      alert(t("submit.importFailed") + ": " + err?.message);
     }
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Submit Import</h1>
+    <div className="max-w-4xl mx-auto p-6 space-y-8">
+      {/* Header */}
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold">{t("submit.title")}</h1>
+        <p className="text-gray-600">{t("submit.description")}</p>
+      </div>
 
-      <div className="bg-white p-4 rounded shadow space-y-3">
-        <p className="text-sm text-gray-600">
-          Rows to send: <strong>{mappedRows?.length ?? 0}</strong>
-        </p>
+      <div className="bg-white border p-6 rounded-2xl shadow-sm space-y-6">
+        {/* Row info */}
+        <div className="flex items-center justify-between">
+          <span className="text-gray-700">
+            {t("submit.rowsToSend")}:
+          </span>
+          <span className="text-lg font-semibold text-indigo-600">
+            {mappedRows?.length ?? 0}
+          </span>
+        </div>
 
+        {/* Progress Bar */}
         <ProgressBar percent={percent} />
 
-        <div className="flex gap-2 items-center mt-2">
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-2">
           <button
             onClick={startImport}
             disabled={runningLocal}
-            className={`px-4 py-2 rounded ${runningLocal ? 'bg-gray-300 text-gray-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+            className={`px-5 py-2.5 rounded-lg font-medium transition ${
+              runningLocal
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-indigo-600 text-white hover:bg-indigo-700"
+            }`}
           >
-            {runningLocal ? 'Importing…' : 'Start Import'}
+            {runningLocal ? t("submit.importing") : t("submit.startImport")}
           </button>
 
           <button
-            onClick={() => { reset(); setPercent(0); setFailedRowsCSV(null); }}
-            className="px-3 py-2 border rounded"
+            onClick={() => {
+              reset();
+              setPercent(0);
+              setFailedRowsCSV(null);
+            }}
+            className="px-5 py-2.5 rounded-lg border font-medium hover:bg-gray-100"
           >
-            Reset progress
+            {t("submit.reset")}
           </button>
         </div>
 
-        <div className="mt-4">
-          <h4 className="font-medium">Chunk statuses</h4>
-          <div className="flex flex-wrap gap-2 mt-2">
+        {/* Chunk Status */}
+        <div className="pt-4">
+          <h4 className="font-medium text-lg">{t("submit.chunkStatuses")}</h4>
+
+          <div className="flex flex-wrap gap-3 mt-3">
             {chunks.map((c) => (
-              <div key={c.index} className={`px-3 py-1 rounded text-sm ${c.status === 'success' ? 'bg-green-50 text-green-700' : c.status === 'in-progress' ? 'bg-blue-50 text-blue-700' : c.status === 'failed' ? 'bg-red-50 text-red-700': 'bg-gray-100 text-gray-700'}`}>
-                #{c.index + 1} — {c.status}
+              <div
+                key={c.index}
+                className={`px-4 py-2 rounded-lg text-sm font-medium shadow-sm border transition ${
+                  c.status === "success"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : c.status === "in-progress"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : c.status === "failed"
+                    ? "bg-red-50 text-red-700 border-red-200"
+                    : "bg-gray-100 text-gray-600 border-gray-200"
+                }`}
+              >
+                #{c.index + 1} — {t(`submit.status.${c.status}`)}
               </div>
             ))}
           </div>
         </div>
 
-        <ImportReport successes={successes} failures={failures} failedRowsCSV={failedRowsCSV} />
+        {/* Results */}
+        <ImportReport
+          successes={successes}
+          failures={failures}
+          failedRowsCSV={failedRowsCSV}
+        />
       </div>
     </div>
   );

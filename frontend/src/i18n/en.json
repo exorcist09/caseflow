@@ -15,5 +15,63 @@
     "processing": "Processing...",
     "retry": "Retry",
     "completed": "Import Completed"
+  },
+  "upload": {
+    "import_cases": "Import Cases",
+    "upload_csv_description": "Upload a CSV file to begin validation and mapping.",
+    "parsing_csv": "Parsing CSV... Please wait.",
+    "rows_parsed_success": "{{count}} rows parsed successfully!",
+    "continue_to_preview": "Continue to Preview →",
+    "drag_drop": "Drag & Drop your CSV file here",
+    "or_click": "or click to browse",
+    "supports_large_files": "Supports files up to 50 MB and 50k+ rows.",
+    "csv_parse_failed": "Failed to parse CSV: ",
+    "worker_error": "Worker error: ",
+    "unexpected": "Unexpected error: "
+  },
+  "mapping": {
+    "title": "Column Mapping / Schema Mapping",
+    "auto_detect": "Auto-Detect",
+    "map_all_required": "Please map all required fields before continuing.",
+    "continue": "Continue →"
+  },
+  "validation": {
+    "title": "Validate Import",
+    "subtitle": "Run validation, fix errors inline, and prepare to submit.",
+    "rows_with_errors": "rows with errors",
+    "validate": "Validate",
+    "fix_all": "Fix All",
+    "download_errors": "Download Errors",
+    "submit": "Submit →"
+  },
+
+  "columnTools": {
+    "title": "Bulk Column Tools",
+    "selectColumn": "Select column",
+    "selectAction": "Select Action",
+    "trim": "Trim whitespace",
+    "lower": "Convert to lowercase",
+    "upper": "Convert to UPPERCASE",
+    "titleCase": "Title Case Names",
+    "normalizePhone": "Normalize Phone (digits only)",
+    "toISODate": "Convert Date → YYYY-MM-DD",
+    "apply": "Apply to Column"
+  },
+  "submit": {
+    "title": "Submit Import",
+    "description": "Start the import process.",
+    "rowsToSend": "Rows to send",
+    "startImport": "Start Import",
+    "importing": "Importing…",
+    "reset": "Reset progress",
+    "chunkStatuses": "Chunk statuses",
+    "noRows": "No rows to import",
+    "importFailed": "Import failed",
+    "status": {
+      "success": "success",
+      "failed": "failed",
+      "in-progress": "in progress",
+      "pending": "pending"
+    }
   }
 }

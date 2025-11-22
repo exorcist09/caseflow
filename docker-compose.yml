@@ -19,10 +19,11 @@ services:
   backend:
     build: ./backend
     container_name: backend
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
     ports:
       - "4000:4000"
     environment:
-      DATABASE_URL: postgres://postgres:postgres12@#@db:5432/caseflow
+      DATABASE_URL: postgres://postgres:postgres12%40%23@db:5432/caseflow
     depends_on:
       db:
         condition: service_healthy
@@ -31,7 +32,7 @@ services:
     build: ./frontend
     container_name: frontend
     ports:
-      - "5173:80"
+      - "5173:5173"
     depends_on:
       - backend
 

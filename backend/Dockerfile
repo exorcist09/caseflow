@@ -1,7 +1,5 @@
-# backend/Dockerfile
 
-# Stage 1: Build
-FROM node:22-alpine AS build
+FROM node:22-bullseye AS build
 
 WORKDIR /usr/src/app
 
@@ -19,7 +17,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Stage 2: Production image
-FROM node:22-alpine
+FROM node:22-bullseye
 
 WORKDIR /usr/src/app
 
