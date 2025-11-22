@@ -1,147 +1,126 @@
 # CaseFlow
 
-One-liner: **Import → Validate → Fix → Submit → Track**
-
-## Architecture overview
-
-- Frontend: React + TypeScript + Vite; state manager: Zustand; headless UI + Tailwind; AG Grid for editable, virtualized grid.
-- Backend: Node.js + Express + TypeScript; Postgres with Prisma ORM.
-- Auth: JWT + refresh token.
-- Import flow: upload CSV → server stores import jobs → front-end chunked create → server creates cases & audit trail.
-- Pagination: cursor-based (server-side).
-- Observability: basic request logs + health endpoint; Sentry placeholder env var support.
-
-(Diagram)
-Frontend <-> Backend REST API <-> PostgreSQL (Prisma)
-
-flow of data in frontend
-┌─────────────────────────────────────┐
-│           Upload Page               │
-│         (/import)                   │
-│                                     │
-│  • User uploads CSV                 │
-│  • CSV parsed → rows[] stored       │
-│    in Zustand uploadStore           │
-│                                     │
-│  [Continue to Preview →]            │
-└─────────────────────────────────────┘
-                   │
-                   │ rows[], file
-                   ▼
-┌─────────────────────────────────────┐
-│         Preview / Mapping Page      │
-│         (/import/preview)           │
-│                                     │
-│  • Shows parsed rows in a table     │
-│  • User reviews data                │
-│  • (Optional) Column mapping        │
-│  • Ready to send final valid rows   │
-│                                     │
-│  [Submit Import →]                  │
-└─────────────────────────────────────┘
-                   │
-                   │ POST rows[] to backend API
-                   ▼
-┌─────────────────────────────────────┐
-│             Backend API             │
-│     POST /api/cases/import          │
-│                                     │
-│  • Validates rows                   │
-│  • Creates Case objects             │
-│  • Saves to database                │
-│  • Returns success/failure          │
-└─────────────────────────────────────┘
-                   │
-                   │ success
-                   ▼
-┌─────────────────────────────────────┐
-│          Cases List Page            │
-│             (/cases)                │
-│                                     │
-│  • Shows all imported cases         │
-│  • Fetches from backend             │
-└─────────────────────────────────────┘
+> **Import → Validate → Fix → Submit → Track**
 
 
+##  Live Deployment
 
-## Run locally (one command)
+| Service | Provider | Link |
+| :--- | :--- | :--- |
+| **Frontend** | Vercel | [Launch App](https://caseflow-frontend-url.com) |
+| **Backend** | Render |  |
+| **Database** | Supabase | PostgreSQL |
+
+---
+
+##  Architecture Overview
+
+### Tech Stack
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Headless UI.
+- **State Management:** Zustand.
+- **Data Grid:** AG Grid (Community Edition) – chosen for virtualization and editing capabilities.
+- **Backend:** Node.js, Express, TypeScript.
+- **Database:** PostgreSQL with Prisma ORM.
+- **Auth:** JWT + Refresh Tokens.
+- **Observability:** Basic request logs + Health endpoint.
+- **i18n:** Internationalization ready.
+
+### System Architecture & Import Flow
+**Flow:** Upload CSV → Server stores job → Frontend chunks creation → Server creates cases & Audit trail.
+
+![Frontend Architecture](./caseflowFrontend.png)
+
+
+![Backend Architecure](./caseflowBackend.png)
+*Figure 2: Detailed sequence of the data import strategy.*
+
+---
+
+## 🛠 Getting Started
+
+Run the entire stack locally with a single command using Docker.
+
+### Prerequisites
+- Git
+- Docker Desktop
+
+### Installation
 
 ```bash
-# fork the repo 
+# 1. Fork and Clone the repository
+git clone [https://github.com/your-username/caseflow.git](https://github.com/your-username/caseflow.git)
+cd caseflow
 
-# Open terminal and clone it locally
-git clone https://github.com/caseflow
-
-# starting the build
+# 2. Start the build (Frontend, Backend, and DB)
 docker compose up --build
 ```
 
-# Visit the deployed link
+### Accessing the Application
+Once the containers are running, access the services at:
+
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:4000/api
+- **Health Check:** http://localhost:4000/health
+
+---
+
+##  Design Decisions & Tradeoffs
+
+- **AG Grid for UI:** We chose AG Grid (Community) because it supports row virtualization, inline editing, and column re-ordering out of the box. This is critical for the **50k row requirement** where standard HTML tables would crash the DOM.
+- **Virtualization Strategy:** Large CSV parsing is offloaded to a **PapaParse worker** to keep the main thread unblocked.
+- **Chunked Uploads:** Data is sent to the backend in configurable chunks (Default: 500 rows). This prevents large database transactions that cause locking and reduces memory pressure on the Node.js server.
+- **Schema Mapping:** The system uses fuzzy header normalization (lowercase + punctuation removal) to auto-detect columns, but allows users to manually remap via the UI before submission.
+- **Validation Layers:**
+  - **Client-side:** Zod rules provide immediate inline feedback.
+  - **Server-side:** Re-validation occurs before DB insertion to prevent tampering.
+
+---
+
+##  Performance & Scalability (50k Rows)
+
+To handle high-volume data ingestion efficiently:
+
+1. **Streaming Parse:** Uses PapaParse in worker mode to stream-parse large CSV files without freezing the UI.
+2. **DOM Virtualization:** AG Grid only renders the rows currently visible in the viewport.
+3. **Batch Ingestion:** Server processes requests in chunks with a retry-on-failure mechanism. Failures are logged per row in `ImportJob` records, allowing users to download an error CSV post-mortem.
+
+---
+
+## 🔒 Security Implementation
+
+- **Authentication:** Implemented via JWT (access tokens) and HTTP-only Refresh Tokens for secure session continuation.
+- **Input Sanitization:** All inputs are validated via Zod on both client and server.
+- **SQL Injection Protection:** Prisma ORM uses parameterized queries by default.
+- **Secret Management:** Sensitive data (DB URLs, Secrets) are stored in environment variables and never committed.
+- **OWASP Basics:** CORS configuration, file size restrictions, and strict MIME-type validation on uploads.
+
+---
+
+##  Testing Strategy
+
+- **Unit Tests:**
+  - Backend validation & services using **Vitest**.
+  - Frontend components using **Vitest**.
+- **E2E Tests:**
+  - **Playwright** covers the "Happy Path": *Sign-in → Upload CSV → Fix Errors → Submit*.
+---
+
+##  Environment Variables
+
+Create a `.env` file in the root directory (or respective service folders) with the following:
 
 ```bash
-Frontend Vite: http://localhost:5173
+# Change them accordingly
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/caseflow?schema=public"
 
-Backend API: http://localhost:4000/api
+# Security
+JWT_SECRET="your_super_secret_key"
+REFRESH_TOKEN_SECRET="your_refresh_secret_key"
 
-Health: http://localhost:4000/health
+# Backend Configuration
+PORT=4000
+
+# Frontend Configuration
+VITE_API_BASE="http://localhost:4000/api"
 ```
-
-# Design decisions & tradeoffs
-
-- Grid choice: AG Grid — enterprise-ready and supports virtualization, editing, column re-order. Chosen for performance given 50k row requirement. (Open-source community edition used.)
-
-- Virtualization & performance: AG Grid provides row virtualization. Large CSV parsing offloaded to PapaParse worker. Chunked, incremental uploads (500 rows default) avoid large single DB transactions to reduce locking and memory pressure.
-
-- Schema mapping: Auto-detect by fuzzy header normalization (lowercase + remove punctuation). Users can remap in UI before submission.
-
-- Validation strategy: Client-side first-pass with zod rules to provide immediate inline errors; server re-validates before creating cases to avoid client tampering.
-
-- Batch ingestion: Chunked with retry-on-failure; server logs per-row failures in ImportJob records for post-mortem & downloadable error CSV.
-
-
-# Performance notes (50k rows)
-
-- Use PapaParse with worker mode for streaming parse of CSV files.
-
-- AG Grid virtualization prevents rendering all rows at once.
-
-- Chunked server requests with configurable chunk size (500 default).
-
-- Consider adding server-side import worker queue (Bull/Redis) for production.
-
-
-# Security notes
-
-- JWT for authentication; refresh tokens for session continuation.
-
-- Input validation both client & server (Zod).
-
-- Use parameterized queries via Prisma — prevents SQL injection.
-
-- Rate-limit & helmet are recommended for production.
-
-- Store secrets via environment variables (do not commit).
-
-- OWASP basics: sanitize inputs, proper CORS, restrict file size, and validate file types.
-
-
-# Testing strategy
-
-- Unit tests: backend validation & services (Vitest), frontend components (Vitest + RTL).
-
-- E2E: Playwright for the main happy path (sign-in → upload → fix → submit → view cases).
-
-- CI runs lint, build, tests on PRs.
-
-# Deployment
-
-- Frontend: Vercel.
-- Backend: Render.
-- DB: Postgres (Supabase).
-
-# Environment variables
-- DATABASE_URL: postgres connection string
-- JWT_SECRET
-- REFRESH_TOKEN_SECRET
-- PORT (backend)
-- VITE_API_BASE (frontend dev override)

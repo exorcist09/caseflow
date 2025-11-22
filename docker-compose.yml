@@ -1,47 +1,39 @@
-version: "3.8"
 services:
   db:
     image: postgres:15
+    container_name: db
     environment:
-      POSTGRES_USER: caseflow
-      POSTGRES_PASSWORD: caseflowpassword
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres12@#
       POSTGRES_DB: caseflow
-    volumes:
-      - db-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-    build: ./app/backend
-    environment:
-      DATABASE_URL: "postgresql://caseflow:caseflowpassword@db:5432/caseflow?schema=public"
-      JWT_SECRET: "replace_dev_jwt_secret"
-      REFRESH_TOKEN_SECRET: "replace_dev_refresh_secret"
-      PORT: 4000
-      SENTRY_DSN: ""
-    depends_on:
-      - db
+    build: ./backend
+    container_name: backend
     ports:
       - "4000:4000"
-    volumes:
-      - ./app/backend:/usr/src/app
-    command: ["npm", "run", "dev"]
+    environment:
+      DATABASE_URL: postgres://postgres:postgres12@#@db:5432/caseflow
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
-    build: ./app/frontend
-    environment:
-      VITE_API_BASE: "http://localhost:4000/api"
+    build: ./frontend
+    container_name: frontend
     ports:
-      - "5173:5173"
+      - "5173:80"
     depends_on:
       - backend
-    volumes:
-      - ./app/frontend:/usr/src/app
-    command: ["npm", "run", "dev"]
 
 volumes:
-  db-data:
-
-
-
-# TODO fix these dummy things
+  db_data:
